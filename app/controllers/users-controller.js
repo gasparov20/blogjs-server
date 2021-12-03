@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const config = require('../../config.json');
 const db = require("../models/index.js");
 const HttpError = require("../models/http-error");
 const User = db.users;
@@ -40,7 +40,7 @@ exports.create = async (req, res, next) => {
   // sign authentication token
     let token;
     try {
-    token = jwt.sign({ userId: newUser.id, email: newUser.email, userName: newUser.firstName }, '2jlkjFAoj43jk', {expiresIn: '1hr'});
+    token = jwt.sign({ userId: newUser.id, email: newUser.email, userName: newUser.firstName }, config.secret, {expiresIn: '1hr'});
   } catch (err) {
     const error = new HttpError("An error occured while creating authentication token, please try again later.", 500);
     return next(error);
@@ -95,7 +95,7 @@ exports.login = async (req, res, next) => {
   // sign authentication token
     let token;
     try {
-    token = jwt.sign({ userId: existingUser.id, email: existingUser.email, userName: existingUser.firstName, userType: existingUser.userType }, '2jlkjFAoj43jk', {expiresIn: '1hr'});
+    token = jwt.sign({ userId: existingUser.id, email: existingUser.email, userName: existingUser.firstName, userType: existingUser.userType }, config.secret, {expiresIn: '1hr'});
   } catch (err) {
     const error = new HttpError("An error occured while creating authentication token, please try again later.", 500);
     return next(error);
@@ -144,9 +144,6 @@ exports.findOne = (req, res, next) => {
       .catch(err => {
         const error = new HttpError("Error retrieving user with ID: " + id, 500);
         return next(error);
-        // res
-        //   .status(500)
-        //   .send({ message: "Error retrieving user with ID: " + id });
       });
 };
 

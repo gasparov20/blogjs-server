@@ -1,5 +1,6 @@
 const HttpError = require("../models/http-error");
 const jwt = require("jsonwebtoken");
+const config = require("../../config.json");
 
 module.exports = (req, res, next) => {
     if (req.method === 'OPTIONS') {
@@ -11,7 +12,7 @@ module.exports = (req, res, next) => {
             const error = new HttpError("Authentication failed.", 401);
             return next(error);
         }
-        const decodedToken = jwt.verify(token, "2jlkjFAoj43jk");
+        const decodedToken = jwt.verify(token, config.secret);
         req.userData = {userId: decodedToken.userId, userName: decodedToken.userName, userType: decodedToken.userType};
         next();
     } catch (err) {
