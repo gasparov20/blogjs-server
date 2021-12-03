@@ -22,7 +22,7 @@ app.use('/api/users', userRoutes);
 // })
 
 const db = require("./app/models");
-const connectionOptions = { useCreateIndex: true, useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false };
+const connectionOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 try {
   db.mongoose.connect(db.url, connectionOptions);
 } catch (err) {
@@ -33,7 +33,7 @@ try {
   res.status(500).send(error);
 }
 
-const port = process.env.NODE_ENV === 'production' ? process.env.PORT || 80 : 5000;
+const port = process.env.NODE_ENV === 'production' ? process.env.PORT || 80 : 4000;
 const server = app.listen(port, () => {
   console.log('Server listening on port ' + port);
 });
