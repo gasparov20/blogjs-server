@@ -1,19 +1,18 @@
-const db = require("../models/index.js");
-const Comment = require("../models/comments-model.js");
+const db = require("./index.js");
+const Comment = require("./comments-model.js");
 
 module.exports = (mongoose) => {
   let schema = mongoose.Schema(
     {
-      title: { type: String, required: true },
-      postBody: { type: String, required: true },
+      title: String,
+      postBody: String,
       creatorID: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       comments: [
         {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Comment",
+          ref: "comment",
         },
       ],
-      published: { type: Boolean, required: true },
     },
     { timestamps: true }
   );
@@ -24,6 +23,6 @@ module.exports = (mongoose) => {
     return object;
   });
 
-  const Post = mongoose.model("Post", schema);
-  return Post;
+  const PendingPost = mongoose.model("PendingPost", schema);
+  return PendingPost;
 };

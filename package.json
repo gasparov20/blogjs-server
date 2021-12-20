@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.compiled.js",
     "dev": "nodemon app.js",
+    "react": "nodemon app.debug.js",
     "build": "babel app.js --out-file app.compiled.js"
   },
   "author": "Andrew Gasparovich",

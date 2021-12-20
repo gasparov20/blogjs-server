@@ -9,18 +9,21 @@ module.exports = (req, res, next) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
     if (!token) {
-      console.log(err);
       const error = new HttpError("Authentication failed.", 401);
       return next(error);
     }
     const decodedToken = jwt.verify(token, config.secret);
     req.userData = {
       userId: decodedToken.userId,
+      userName: decodedToken.userName,
       userType: decodedToken.userType,
     };
-    next();
+    if (decodedToken.userType !== "admin") {
+      res.status(401).send("Access denied.");
+    } else {
+      next();
+    }
   } catch (err) {
-    console.log(err);
     const error = new HttpError("Authentication failed.", 401);
     return next(error);
   }

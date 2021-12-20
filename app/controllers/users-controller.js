@@ -1,6 +1,6 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const config = require('../../config.json');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const config = require("../../config.json");
 const db = require("../models/index.js");
 const HttpError = require("../models/http-error");
 const User = db.users;
@@ -17,7 +17,28 @@ exports.create = async (req, res, next) => {
   try {
     hashedPassword = await bcrypt.hash(req.body.password, 12);
   } catch (err) {
-    const error = new HttpError("Could not encode password, please try again later.", 500);
+    const error = new HttpError(
+      "Could not encode password, please try again later.",
+      500
+    );
+  }
+
+  let emailAvailable = false;
+
+  // check for email availability
+  try {
+    existingUser = await User.findOne({ email: req.body.email });
+  } catch (err) {
+    emailAvailable = true;
+  }
+
+  if (!existingUser) {
+    emailAvailable = true;
+  }
+
+  if (!emailAvailable) {
+    res.send({ message: "email address already in use" });
+    return;
   }
 
   // Create a new user
@@ -26,27 +47,44 @@ exports.create = async (req, res, next) => {
     lastName: req.body.lastName,
     email: req.body.email,
     password: hashedPassword,
-    numPosts: 0,
-    userType: req.body.userType
+    userType: "user",
+    posts: [],
+    image: "/uploads/images/defaultavi.png",
+    active: false,
   });
 
   // Save user in the database
   try {
     await newUser.save();
   } catch (err) {
-    const error = new HttpError("An error occurred while creating a new user.", 500);
+    console.log(err);
+    const error = new HttpError(
+      "An error occurred while creating a new user.",
+      500
+    );
     return next(error);
   }
   // sign authentication token
-    let token;
-    try {
-    token = jwt.sign({ userId: newUser.id, email: newUser.email, userName: newUser.firstName }, config.secret, {expiresIn: '1hr'});
+  let token;
+  try {
+    token = jwt.sign(
+      { userId: newUser.id, email: newUser.email, userName: newUser.firstName },
+      config.secret,
+      { expiresIn: "1hr" }
+    );
   } catch (err) {
-    const error = new HttpError("An error occured while creating authentication token, please try again later.", 500);
+    const error = new HttpError(
+      "An error occured while creating authentication token, please try again later.",
+      500
+    );
     return next(error);
   }
-  res.status(201).json({ userId: newUser.id, email: newUser.email, userName: newUser.firstName });
-}; 
+  res.status(201).json({
+    userId: newUser.id,
+    email: newUser.email,
+    userName: newUser.firstName,
+  });
+};
 
 // user login
 exports.login = async (req, res, next) => {
@@ -56,12 +94,9 @@ exports.login = async (req, res, next) => {
 
   // check for user existence by email
   try {
-    existingUser = await User.findOne({email: email})
+    existingUser = await User.findOne({ email: email });
   } catch (err) {
-    const error = new HttpError(
-      "Logging in failed, please try again later.",
-      500
-    );
+    const error = new HttpError("Login failed, please try again later.", 500);
     return next(error);
   }
 
@@ -73,10 +108,10 @@ exports.login = async (req, res, next) => {
     );
     return next(error);
   }
-      
+
   // encode password and compare to stored encoded password
-    let isValidPassword = false;
-    try {
+  let isValidPassword = false;
+  try {
     isValidPassword = await bcrypt.compare(password, existingUser.password);
   } catch (err) {
     error = new HttpError("Login failed, could not decode password.", 408);
@@ -85,145 +120,177 @@ exports.login = async (req, res, next) => {
 
   // incorrect password
   if (!isValidPassword) {
-    error = new HttpError(
-      "Login failed, password is incorrect.",
-      401
-    );
+    error = new HttpError("Login failed, password is incorrect.", 401);
     return next(error);
   }
 
-  // sign authentication token
-    let token;
+  let token = "unverified";
+  if (existingUser.active) {
+    // sign authentication token
     try {
-    token = jwt.sign({ userId: existingUser.id, email: existingUser.email, userName: existingUser.firstName, userType: existingUser.userType }, config.secret, {expiresIn: '1hr'});
-  } catch (err) {
-    const error = new HttpError("An error occured while creating authentication token, please try again later.", 500);
-    return next(error);
+      token = jwt.sign(
+        {
+          userId: existingUser.id,
+          email: existingUser.email,
+          userType: existingUser.userType,
+        },
+        config.secret,
+        { expiresIn: "1hr" }
+      );
+    } catch (err) {
+      const error = new HttpError(
+        "An error occured while creating authentication token, please try again later.",
+        500
+      );
+      return next(error);
+    }
   }
-
   // send back user info and token
-  res
-  .status(201)
-  .json({
+  res.status(201).json({
     userId: existingUser.id,
+    token: token,
     userName: existingUser.firstName,
     userType: existingUser.userType,
-    fullName: existingUser.firstName + " " + existingUser.lastName,
-    email: existingUser.email,
-    token: token
   });
 };
 
 // Retrieve all users
 exports.findAll = (req, res, next) => {
   const title = req.query.title;
-  var condition = title ? { title: { $regex: new RegExp(title), $options: "i" } } : {};
+  var condition = title
+    ? { title: { $regex: new RegExp(title), $options: "i" } }
+    : {};
 
   User.find(condition)
-    .then(data => {
+    .then((data) => {
       res.send(data);
     })
-    .catch(err => {
-      const error = new HttpError("An error occurred while retrieving users.", 500);
+    .catch((err) => {
+      const error = new HttpError(
+        "An error occurred while retrieving users.",
+        500
+      );
       return next(error);
     });
 };
 
 // Find a user by ID
 exports.findOne = (req, res, next) => {
-    const id = req.params.id;
-    User.findById(id)
-      .then(data => {
-        if (!data) {
-          const error = new HttpError("Could not find user with ID: " + id, 404);
-          return next(error);
-        }
-
-        else res.send(data);
-      })
-      .catch(err => {
-        const error = new HttpError("Error retrieving user with ID: " + id, 500);
+  const id = req.params.id;
+  User.findById(id)
+    .then((data) => {
+      if (!data) {
+        const error = new HttpError("Could not find user with ID: " + id, 404);
         return next(error);
-      });
+      } else {
+        res.send({
+          firstName: "Bob",
+          lastName: "Saget",
+          posts: [...data.posts],
+          _id: data._id,
+          image: data.image,
+          active: data.active,
+        });
+      }
+    })
+    .catch((err) => {
+      const error = new HttpError("Error retrieving user with ID: " + id, 500);
+      return next(error);
+    });
 };
 
 // find a user and only send back name and ID
 exports.findOneLite = (req, res, next) => {
   const id = req.params.id;
-    User.findById(id)
-      .then(data => {
-        if (!data) {
-          const error = new HttpError("Could not find user with ID: " + id, 404);
-          return next(error);
-        }        
-        else {
-          const dataLite = {
+  User.findById(id)
+    .then((data) => {
+      if (!data) {
+        const error = new HttpError("Could not find user with ID: " + id, 404);
+        return next(error);
+      } else {
+        const dataLite = {
           firstName: data.firstName,
           name: `${data.firstName} ${data.lastName}`,
-          id: data.id
-          };
-          res.send(dataLite);
-        }
-      })
-      .catch(err => {
-        const error = new HttpError("Error retrieving user with ID: " + id, 500);
-        return next(error);
-      });
+          userType: data.userType,
+          id: data.id,
+        };
+        res.send(dataLite);
+      }
+    })
+    .catch((err) => {
+      const error = new HttpError("Error retrieving user with ID: " + id, 500);
+      return next(error);
+    });
 };
 
 // Update a user by the id in the request
 exports.update = (req, res, next) => {
-    if (!req.body) {
-      const error = new HttpError("Cannot update empty data location.", 400);
+  if (!req.body) {
+    const error = new HttpError("Cannot update empty data location.", 400);
+    return next(error);
+  }
+
+  const id = req.params.id;
+
+  User.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
+    .then((data) => {
+      if (!data) {
+        const error = new HttpError(
+          "Cannot update user with ID: ${id}. It probably doesn't exist.",
+          404
+        );
+        return next(error);
+      } else res.send({ message: "User ${id} updated successfully." });
+    })
+    .catch((err) => {
+      const error = new HttpError(
+        "An error occured while updating user with ID: " + id,
+        500
+      );
       return next(error);
-      }
-    
-      const id = req.params.id;
-    
-      User.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
-        .then(data => {
-          if (!data) {
-            const error = new HttpError("Cannot update user with ID: ${id}. It probably doesn't exist.", 404);
-            return next(error);
-          } else res.send({ message: "User ${id} updated successfully." });
-        })
-        .catch(err => {
-          const error = new HttpError("An error occured while updating user with ID: " + id, 500);
-          return next(error);
-        });
+    });
 };
 
 // Delete a user with the specified id in the request
 exports.delete = (req, res) => {
-    const id = req.params.id;
+  const id = req.params.id;
 
-    User.findByIdAndRemove(id)
-      .then(data => {
-        if (!data) {
-          const error = new HttpError("Cannot delete user with ID: ${id}. It probably doesn't exist.", 404);
-          return next(error);
-        } else {
-          res.send({
-            message: "User deleted successfully."
-          });
-        }
-      })
-      .catch(err => {
-          const error = new HttpError("An error occured while deleting user with ID: ${id}.", 500);
-          return next(error);
-      });
+  User.findByIdAndRemove(id)
+    .then((data) => {
+      if (!data) {
+        const error = new HttpError(
+          "Cannot delete user with ID: ${id}. It probably doesn't exist.",
+          404
+        );
+        return next(error);
+      } else {
+        res.send({
+          message: "User deleted successfully.",
+        });
+      }
+    })
+    .catch((err) => {
+      const error = new HttpError(
+        "An error occured while deleting user with ID: ${id}.",
+        500
+      );
+      return next(error);
+    });
 };
 
 // Delete all users from the database
 exports.deleteAll = (req, res) => {
   User.deleteMany({})
-    .then(data => {
+    .then((data) => {
       res.send({
-        message: `${data.deletedCount} users were deleted successfully!`
+        message: `${data.deletedCount} users were deleted successfully!`,
       });
     })
-    .catch(err => {
-        const error = new HttpError("An error occured while deleting all users.", 500);
-        return next(error);
+    .catch((err) => {
+      const error = new HttpError(
+        "An error occured while deleting all users.",
+        500
+      );
+      return next(error);
     });
 };
