@@ -17,6 +17,10 @@ app.use(
 
 app.use(express.static(path.join("public")));
 
+// any route in post-routes will need this prefix
+app.use("/posts", postRoutes);
+app.use("/users", userRoutes);
+
 const db = require("./app/models");
 const connectionOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 try {
@@ -28,10 +32,6 @@ try {
   };
   res.status(500).send(error);
 }
-
-// any route in post-routes will need this prefix
-app.use("/api/posts", postRoutes);
-app.use("/api/users", userRoutes);
 
 const port =
   process.env.NODE_ENV === "production" ? process.env.PORT || 80 : 4000;

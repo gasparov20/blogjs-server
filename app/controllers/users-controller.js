@@ -55,6 +55,8 @@ exports.create = async (req, res, next) => {
     posts: [],
     image: "",
     active: false,
+    bio: "",
+    location: "",
   });
 
   // Save user in the database
@@ -208,6 +210,8 @@ exports.findOne = async (req, res, next) => {
           image: data.image,
           active: data.active,
           joined: data.createdAt,
+          bio: data.bio,
+          location: data.location,
         });
       }
     })
@@ -250,6 +254,8 @@ exports.update = async (req, res, next) => {
     return next(error);
   }
   const id = req.params.id;
+
+  const { firstName, lastName, location, bio } = req.body;
 
   if (req.userData.userId !== id && req.userData.userType !== "admin") {
     const error = new HttpError(
@@ -303,12 +309,24 @@ exports.update = async (req, res, next) => {
     }
   }
 
+  console.log({
+    firstName,
+    lastName,
+    location,
+    bio,
+    image: newImage,
+  });
+
   User.findByIdAndUpdate(
     id,
     {
+      firstName,
+      lastName,
+      location,
+      bio,
       image: newImage,
     },
-    { useFindAndModify: false }
+    { useFindAndModify: false, omitUndefined: true }
   )
     .then((data) => {
       if (!data) {

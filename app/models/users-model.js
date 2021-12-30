@@ -9,6 +9,8 @@ module.exports = (mongoose) => {
       userType: { type: String, required: true },
       posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
       active: { type: Boolean, required: true },
+      bio: { type: String },
+      location: { type: String },
     },
     { timestamps: true }
   );
