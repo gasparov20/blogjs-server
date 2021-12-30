@@ -1,9 +1,13 @@
+const fs = require("fs");
+const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("../../config.json");
 const db = require("../models/index.js");
 const HttpError = require("../models/http-error");
 const User = db.users;
+const Post = db.posts;
+const Comment = db.comments;
 
 // Create a new user
 exports.create = async (req, res, next) => {
@@ -49,7 +53,7 @@ exports.create = async (req, res, next) => {
     password: hashedPassword,
     userType: "user",
     posts: [],
-    image: "/uploads/images/defaultavi.png",
+    image: "",
     active: false,
   });
 
@@ -155,13 +159,13 @@ exports.login = async (req, res, next) => {
 };
 
 // Retrieve all users
-exports.findAll = (req, res, next) => {
+exports.findAll = async (req, res, next) => {
   const title = req.query.title;
   var condition = title
     ? { title: { $regex: new RegExp(title), $options: "i" } }
     : {};
 
-  User.find(condition)
+  await User.find(condition)
     .then((data) => {
       res.send(data);
     })
@@ -175,21 +179,35 @@ exports.findAll = (req, res, next) => {
 };
 
 // Find a user by ID
-exports.findOne = (req, res, next) => {
+exports.findOne = async (req, res, next) => {
   const id = req.params.id;
-  User.findById(id)
+  await User.findById(id)
+    .populate({
+      path: "posts",
+      model: Post,
+      populate: {
+        path: "comments",
+        model: Comment,
+        populate: {
+          path: "creatorID",
+          model: User,
+        },
+      },
+    })
     .then((data) => {
       if (!data) {
         const error = new HttpError("Could not find user with ID: " + id, 404);
         return next(error);
       } else {
         res.send({
-          firstName: "Bob",
-          lastName: "Saget",
+          firstName: data.firstName,
+          lastName: data.lastName,
           posts: [...data.posts],
           _id: data._id,
+          id: data._id,
           image: data.image,
           active: data.active,
+          joined: data.createdAt,
         });
       }
     })
@@ -200,9 +218,9 @@ exports.findOne = (req, res, next) => {
 };
 
 // find a user and only send back name and ID
-exports.findOneLite = (req, res, next) => {
+exports.findOneLite = async (req, res, next) => {
   const id = req.params.id;
-  User.findById(id)
+  await User.findById(id)
     .then((data) => {
       if (!data) {
         const error = new HttpError("Could not find user with ID: " + id, 404);
@@ -211,8 +229,10 @@ exports.findOneLite = (req, res, next) => {
         const dataLite = {
           firstName: data.firstName,
           name: `${data.firstName} ${data.lastName}`,
+          image: data.image,
           userType: data.userType,
           id: data.id,
+          joined: data.createdAt,
         };
         res.send(dataLite);
       }
@@ -224,23 +244,80 @@ exports.findOneLite = (req, res, next) => {
 };
 
 // Update a user by the id in the request
-exports.update = (req, res, next) => {
+exports.update = async (req, res, next) => {
   if (!req.body) {
     const error = new HttpError("Cannot update empty data location.", 400);
     return next(error);
   }
-
   const id = req.params.id;
 
-  User.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
+  if (req.userData.userId !== id && req.userData.userType !== "admin") {
+    const error = new HttpError(
+      "You aren't allowed to update someone else's profile.",
+      401
+    );
+    return next(error);
+  }
+
+  let existingUser;
+
+  // check for user existence by email
+  try {
+    existingUser = await User.findById(id);
+  } catch (err) {
+    const error = new HttpError(
+      "Could not find user, please try again later.",
+      500
+    );
+    return next(error);
+  }
+
+  // user doesn't exist
+  if (!existingUser) {
+    const error = new HttpError("User does not exist.", 401);
+    return next(error);
+  }
+
+  if (
+    (req.file && existingUser.image !== "") ||
+    req.body.removeImage === "true"
+  ) {
+    fs.unlink(path.join("public", existingUser.image), (err) => {
+      if (!err) {
+        console.log("Image deleted for user " + id);
+      } else {
+        console.log("Image deletion error: " + err);
+      }
+    });
+  }
+
+  let newImage = "";
+
+  if (req.body.removeImage === "true") {
+    newImage = "";
+  } else {
+    if (req.file && req.file.path) {
+      newImage = req.file.path.substring(6);
+    } else if (existingUser.image) {
+      newImage = existingUser.image;
+    }
+  }
+
+  User.findByIdAndUpdate(
+    id,
+    {
+      image: newImage,
+    },
+    { useFindAndModify: false }
+  )
     .then((data) => {
       if (!data) {
         const error = new HttpError(
-          "Cannot update user with ID: ${id}. It probably doesn't exist.",
+          `Cannot update user with ID: ${id}. It probably doesn't exist.`,
           404
         );
         return next(error);
-      } else res.send({ message: "User ${id} updated successfully." });
+      } else res.send({ message: `User ${id} updated successfully.` });
     })
     .catch((err) => {
       const error = new HttpError(

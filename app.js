@@ -1,40 +1,53 @@
-const express = require('express');
-const path = require('path');
+const express = require("express");
+const path = require("path");
 const bodyParser = require("body-parser");
-const postRoutes = require('./app/routes/post-routes');
-const userRoutes = require('./app/routes/user-routes');
-const cors = require('cors');
+const postRoutes = require("./app/routes/post-routes");
+const userRoutes = require("./app/routes/user-routes");
+const cors = require("cors");
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
 
-app.use(express.static(path.join('public')));
+app.use(
+  "/uploads/images",
+  express.static(path.join("public", "uploads", "images"));
+);
+
+app.use(express.static(path.join("public")));
 
 // any route in post-routes will need this prefix
-app.use('/api/posts', postRoutes);
-app.use('/api/users', userRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/users", userRoutes);
 
-// // send the front-end at root
-// app.use((req, res, next) => {
-//   res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
-// })
+app.use((error, req, res, next) => {
+  if (req.file) {
+    fs.unlink(req.file.path, (err) => {
+      console.log(err);
+    });
+  }
+  if (res.headerSent) {
+    return next(error);
+  }
+  res.status(error.code, 500);
+  res.json({ message: error.message || "An unknown error occured." });
+});
 
 const db = require("./app/models");
 const connectionOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 try {
-  db.mongoose.connect(db.url, connectionOptions)
-} catch (err)
-{
+  db.mongoose.connect(db.url, connectionOptions);
+} catch (err) {
   const error = {
-    "message": "Could not connect to the database.",
-    "error": err
-  }
+    message: "Could not connect to the database.",
+    error: err,
+  };
   res.status(500).send(error);
 }
 
-const port = process.env.NODE_ENV === 'production' ? (process.env.PORT || 80) : 4000;
+const port =
+  process.env.NODE_ENV === "production" ? process.env.PORT || 80 : 4000;
 const server = app.listen(port, () => {
-    console.log('Server listening on port ' + port);
+  console.log("Server listening on port " + port);
 });

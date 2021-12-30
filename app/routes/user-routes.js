@@ -1,6 +1,7 @@
 const usersController = require("../controllers/users-controller.js");
 var router = require("express").Router();
 const checkAuth = require("../middleware/check-auth");
+const fileUpload = require("../middleware/file-upload");
 
 // Create a new user
 router.post("/register", usersController.create);
@@ -20,7 +21,7 @@ router.use(checkAuth);
 router.get("/", usersController.findAll);
 
 // Update a user with id
-router.put("/:id", usersController.update);
+router.put("/:id", fileUpload.single("image"), usersController.update);
 
 // Delete a user with id
 router.delete("/:id", usersController.delete);

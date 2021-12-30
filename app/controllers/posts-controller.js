@@ -345,6 +345,9 @@ exports.update = async (req, res, next) => {
 exports.delete = async (req, res, next) => {
   const id = req.params.id;
 
+  console.log(req.userData);
+  console.log(req.body);
+
   if (
     req.userData.userId !== req.body.creatorID &&
     req.userData.userType !== "admin"
