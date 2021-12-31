@@ -5,9 +5,91 @@ const jwt = require("jsonwebtoken");
 const config = require("../../config.json");
 const db = require("../models/index.js");
 const HttpError = require("../models/http-error");
+const nodemailer = require("nodemailer");
+const { v4: uuidv4 } = require("uuid");
 const User = db.users;
 const Post = db.posts;
 const Comment = db.comments;
+
+const sendVerificationEmail = (recipient, code) => {
+  var transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "andrew.theblog@gmail.com",
+      pass: "Kenneth727@",
+    },
+  });
+
+  // email link should be localhost when the server is running locally
+  // and ec2 address when the server is running on ec2
+  var mailOptions = {
+    from: "andrew.theblog@gmail.com",
+    to: recipient,
+    subject: "Welcome to The Blog! Please verify your email address.",
+    text: `${process.env.API_URL}/users/verify/${code}`,
+  };
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Email sent to " + recipient + ": " + info.response);
+    }
+  });
+};
+
+exports.verifiedLogin = async (req, res, next) => {
+  const code = req.params.code;
+
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ code: code });
+  } catch (err) {
+    const error = new HttpError(
+      "An error occured while verifying account, please try again later.",
+      500
+    );
+    return next(error);
+  }
+
+  let token = "unverified";
+  if (existingUser.active) {
+    // sign authentication token
+    try {
+      token = jwt.sign(
+        {
+          userId: existingUser.id,
+          email: existingUser.email,
+          userType: existingUser.userType,
+        },
+        config.secret,
+        { expiresIn: "1hr" }
+      );
+    } catch (err) {
+      const error = new HttpError(
+        "An error occured while creating authentication token, please try again later.",
+        500
+      );
+      return next(error);
+    }
+  }
+  // send back user info and token
+  res.status(201).json({
+    userId: existingUser.id,
+    token: token,
+    userName: existingUser.firstName,
+    userType: existingUser.userType,
+  });
+};
+
+exports.verify = async (req, res, next) => {
+  const code = req.params.code;
+  await User.findOneAndUpdate({ code: code }, { active: true })
+    .then((data) => {
+      res.redirect(`${process.env.ROOT_URL}/users/verify/${code}`);
+    })
+    .catch((err) => {});
+};
 
 // Create a new user
 exports.create = async (req, res, next) => {
@@ -45,6 +127,8 @@ exports.create = async (req, res, next) => {
     return;
   }
 
+  const verificationCode = uuidv4();
+
   // Create a new user
   const newUser = new User({
     firstName: req.body.firstName,
@@ -57,6 +141,7 @@ exports.create = async (req, res, next) => {
     active: false,
     bio: "",
     location: "",
+    code: verificationCode,
   });
 
   // Save user in the database
@@ -85,6 +170,9 @@ exports.create = async (req, res, next) => {
     );
     return next(error);
   }
+
+  sendVerificationEmail(newUser.email, verificationCode);
+
   res.status(201).json({
     userId: newUser.id,
     email: newUser.email,
@@ -236,6 +324,7 @@ exports.findOneLite = async (req, res, next) => {
           image: data.image,
           userType: data.userType,
           id: data.id,
+          _id: data.id,
           joined: data.createdAt,
         };
         res.send(dataLite);
@@ -304,6 +393,8 @@ exports.update = async (req, res, next) => {
   } else {
     if (req.file && req.file.path) {
       newImage = req.file.path.substring(6);
+    } else if (req.body.image) {
+      newImage = req.body.image;
     } else if (existingUser.image) {
       newImage = existingUser.image;
     }

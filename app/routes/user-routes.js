@@ -14,6 +14,12 @@ router.get("/:id", usersController.findOneLite);
 // Retrieve a single user with id
 router.get("/id/:id", usersController.findOne);
 
+// User self-verification
+router.get("/verify/:code", usersController.verify);
+
+// User self-verification
+router.get("/verified/:code", usersController.verifiedLogin);
+
 // following routes need to have an auth token attached to requests
 router.use(checkAuth);
 
