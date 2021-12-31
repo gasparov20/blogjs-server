@@ -309,14 +309,6 @@ exports.update = async (req, res, next) => {
     }
   }
 
-  console.log({
-    firstName,
-    lastName,
-    location,
-    bio,
-    image: newImage,
-  });
-
   User.findByIdAndUpdate(
     id,
     {
