@@ -3,7 +3,7 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const postRoutes = require("./app/routes/post-routes");
 const userRoutes = require("./app/routes/user-routes");
-//const cors = require("cors");
+const cors = require("cors");
 const app = express();
 //require('dotenv').config();
 
