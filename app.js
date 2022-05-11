@@ -11,10 +11,10 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
 
-// app.use(
-//   "/uploads/images",
-//   express.static(path.join("uploads", "images"));
-// );
+app.use(
+  "/uploads/images",
+  express.static(path.join(process.env.UPLOAD_BUCKET ,"uploads", "images"));
+);
 
 //app.use(express.static(path.join("public")));
 

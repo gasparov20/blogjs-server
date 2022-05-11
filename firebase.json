@@ -1,0 +1,9 @@
+{
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "site": "ag-mern-blog",
+    "public": "public"
+  }
+}

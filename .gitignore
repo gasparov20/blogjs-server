@@ -5,3 +5,4 @@ app.debug.js
 .env*
 config.json
 /app/config
+firebase.js
