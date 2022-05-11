@@ -13,10 +13,10 @@ app.use(cors());
 
 app.use(
   "/uploads/images",
-  express.static(path.join("public", "uploads", "images"));
+  express.static(path.join("uploads", "images"));
 );
 
-app.use(express.static(path.join("public")));
+//app.use(express.static(path.join("public")));
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
