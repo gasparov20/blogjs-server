@@ -7,9 +7,9 @@ const userRoutes = require("./app/routes/user-routes");
 const app = express();
 //require('dotenv').config();
 
-//app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-//app.use(cors());
+app.use(cors());
 
 // app.use(
 //   "/uploads/images",
