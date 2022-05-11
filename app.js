@@ -3,28 +3,31 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const postRoutes = require("./app/routes/post-routes");
 const userRoutes = require("./app/routes/user-routes");
-const cors = require("cors");
+//const cors = require("cors");
 const app = express();
 //require('dotenv').config();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(cors());
+//app.use(cors());
 
-app.use(
-  "/uploads/images",
-  express.static(path.join("uploads", "images"));
-);
+// app.use(
+//   "/uploads/images",
+//   express.static(path.join("uploads", "images"));
+// );
 
 //app.use(express.static(path.join("public")));
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE"
+  );
   next();
 });
 
