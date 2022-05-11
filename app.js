@@ -61,5 +61,5 @@ try {
 }
 
 const server = app.listen(process.env.PORT || 5000, () => {
-  console.log("Server listening on port " + port);
+  console.log("Server running");
 });
