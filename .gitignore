@@ -1,4 +1,5 @@
 /node_modules
-app.js
+/static
+app.compiled.js
 app.debug.js
 .env*

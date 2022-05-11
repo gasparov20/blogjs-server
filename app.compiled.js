@@ -16,8 +16,6 @@ app.use(
   express.static(path.join("public", "uploads", "images"))
 );
 
-app.use(express.static(path.join("public")));
-
 // any route in post-routes will need this prefix
 app.use("/posts", postRoutes);
 app.use("/users", userRoutes);
