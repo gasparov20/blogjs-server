@@ -3,3 +3,5 @@
 app.compiled.js
 app.debug.js
 .env*
+config.json
+/app/config

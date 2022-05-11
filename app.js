@@ -26,7 +26,7 @@ app.use((req, res, next) => {
   );
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
   next();
-})
+});
 
 // any route in post-routes will need this prefix
 app.use("/api/posts", postRoutes);
@@ -48,7 +48,7 @@ app.use((error, req, res, next) => {
 const db = require("./app/models");
 const connectionOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 try {
-  db.mongoose.connect(db.url, connectionOptions);
+  db.mongoose.connect(process.env.DB_URL, connectionOptions);
 } catch (err) {
   const error = {
     message: "Could not connect to the database.",

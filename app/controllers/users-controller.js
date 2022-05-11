@@ -62,7 +62,7 @@ exports.verifiedLogin = async (req, res, next) => {
           email: existingUser.email,
           userType: existingUser.userType,
         },
-        config.secret,
+        process.env.SECRET,
         { expiresIn: "1hr" }
       );
     } catch (err) {
@@ -160,7 +160,7 @@ exports.create = async (req, res, next) => {
   try {
     token = jwt.sign(
       { userId: newUser.id, email: newUser.email, userName: newUser.firstName },
-      config.secret,
+      process.env.SECRET,
       { expiresIn: "1hr" }
     );
   } catch (err) {
@@ -228,7 +228,7 @@ exports.login = async (req, res, next) => {
           email: existingUser.email,
           userType: existingUser.userType,
         },
-        config.secret,
+        process.env.SECRET,
         { expiresIn: "1hr" }
       );
     } catch (err) {
