@@ -13,7 +13,7 @@ app.use(cors());
 
 app.use(
   "/uploads/images",
-  express.static(path.join(process.env.UPLOAD_BUCKET ,"uploads", "images"));
+  path.join(process.env.UPLOAD_BUCKET, "uploads", "images");
 );
 
 //app.use(express.static(path.join("public")));
