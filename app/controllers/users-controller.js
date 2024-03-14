@@ -228,12 +228,12 @@ exports.login = async (req, res, next) => {
           email: existingUser.email,
           userType: existingUser.userType,
         },
-        process.env.SECRET,
+        "2jl!kj%%F#Aoj&43jk",
         { expiresIn: "1hr" }
       );
     } catch (err) {
       const error = new HttpError(
-        "An error occured while creating authentication token, please try again later.",
+        "An error occured while creating authentication token, please try again later. : " + process.env.SECRET,
         500
       );
       return next(error);

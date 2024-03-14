@@ -23,6 +23,7 @@ app.use("/users", userRoutes);
 const db = require("./app/models");
 const connectionOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 try {
+  db.mongoose.set('strictQuery', false);
   db.mongoose.connect(db.url, connectionOptions);
 } catch (err) {
   const error = {
@@ -35,5 +36,5 @@ try {
 const port =
   process.env.NODE_ENV === "production" ? process.env.PORT || 80 : 4000;
 const server = app.listen(port, () => {
-  console.log("Server listening on port " + port);
+  console.log("Env: " + process.env.NODE_ENV + ", Server listening on port " + port);
 });
